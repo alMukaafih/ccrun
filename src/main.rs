@@ -5,7 +5,7 @@ use clap::{Parser, Subcommand};
 use nix::errno::Errno;
 use nix::sys::signal::Signal;
 use nix::sys::wait::{WaitStatus, waitpid};
-use nix::unistd::{execvp, sethostname};
+use nix::unistd::{chdir, chroot, execvpe, sethostname};
 
 use nix::sched::{CloneFlags, clone};
 
@@ -36,7 +36,9 @@ fn main() -> anyhow::Result<()> {
                 let pid = clone(
                     Box::new(|| {
                         sethostname("container").unwrap();
-                        let _ = execvp(&args[0], &args);
+                        chroot("rootfs").unwrap();
+                        chdir("/").unwrap();
+                        let _ = execvpe::<CString, CString>(&args[0], &args, &[]);
 
                         Errno::last_raw() as _
                     }),
